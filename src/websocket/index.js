@@ -1,6 +1,3 @@
-const url = require('url')
-
-
 class WebSocketRouter {
 
     constructor() {
@@ -13,6 +10,9 @@ class WebSocketRouter {
             path = '/'
         }
         for(let handle of handlers) {
+            if(handle instanceof WebSocketRouter) {
+                handle = handle.handleUpgrade
+            }
             if(handle.length >= 3) {
                 this.stack.push({
                     route: new Route(path),
@@ -38,9 +38,8 @@ class WebSocketRouter {
         let _next = () => {
             while(idx < this.stack.length) {
                 let { route, handle } = this.stack[idx++]
-                let urlInfo = url.parse(req.url)
 
-                if(!route.match(urlInfo)) {
+                if(!route.match(req.relativeUrl)) {
                     continue;
                 }
 
@@ -54,11 +53,14 @@ class WebSocketRouter {
     }
 
     handleConnection(req, ws) {
-        let urlInfo = url.parse(req.url)
         for(let {route, handle} of this.stack) {
-            if(route.match(urlInfo) && handle.length === 1) {
+            if(route.match(req.relativeUrl) && handle.length === 1) {
                 handle(req, ws)
             }
         }
     }
+}
+
+module.exports = {
+    WebSocketRouter
 }

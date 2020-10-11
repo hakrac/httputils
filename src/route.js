@@ -3,37 +3,53 @@ const MULTI_PATH_WILDCARD = '*'
 
 class Route {
 
-    constructor(path) {
-        path = this._sanitate(path)
-    }
-
-    _sanitate(path) {
-        path = path
-            .replace(MULTI_PATH_WILDCARD, '')
-            .replace(/:(\w*?)/, '(?<$1>[^\/])')
-            .replace(/^\//, '') 
-            + '/'
-
-        return path
+    constructor(path=MULTI_PATH_WILDCARD, http_method='GET') {
+        let pattern
         
+        if(path.trim() === MULTI_PATH_WILDCARD) {
+            pattern = '.*'
+        } else {
+            pattern = '^\/' + path
+                .replace(/:(\w*)/, '(?<$1>\\w+)')   // replace params with group
+                .replace(/^\/+/, '')                // remove intial slash
+                .replace(/\/+$/, '')                // remove trailing slash
+                .replace(/\^/, '' )                 // remove all carets
+        }
+
+        this.regPath = new RegExp(pattern)
+        this.regPathGlobal = new RegExp(pattern + '$')
+        this.method = http_method
     }
 
-    match(urlInfo) {
-        // check if url starts with this route
+
+    // check if path starts with this route
+    match(path, http_method='GET') {
+        path = Route.sanitize(path)
+        return this.method === http_method && path.match(this.regPath)
     }
 
-    matchFull(urlInfo) {
-        // check if url fully matches this route
+
+    // check if path fully matches this route
+    matchFull(path, http_method='GET') {
+        path = Route.sanitize(path)
+        return this.method === http_method && path.match(this.regPathGlobal)
     }
 
-    relative(urlInfo) {
-        // make url relative to this route
+    // make path relative to this route
+    relative(path) {
+        path = Route.sanitize(path)
+        return path.replace(this.regPath, '') || '/'
     }
 
 }
 
+Route.sanitize = function(path) {
+    return '/' + path
+        .replace(/^\//, '')                         // remove intial slash
+        .replace(/\/$/, '')                         // remove trailing slash
+}
 
 module.exports = {
-    Route,
-    MULTI_PATH_WILDCARD
+    Route
 }
+

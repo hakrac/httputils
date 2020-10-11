@@ -1,6 +1,9 @@
 const http = require('http')
 const WebSocket = require('ws')
-const url = require('url')
+
+const {WebSocketRouter} = require('./websocket')
+const {HTTPRouter, METHODS} = require('./http')
+
 
 class Application extends http.Server {
 
@@ -12,21 +15,20 @@ class Application extends http.Server {
     }
 
     use() {
-        this.httprouter.use(arguments)
+        this.httprouter.use(...arguments)
     }
 
     upgrade() {
-        this.wsrouter.upgrade(arguments)
+        this.wsrouter.upgrade(...arguments)
     }
 
     ws() {
-        this.wsrouter.ws(arguments)
+        this.wsrouter.ws(...arguments)
     }
 
     handleHTTPRequest(req, res) {
-        let tail = () => {
-
-        }
+        req.relativeUrl = req.url
+        let tail = () => {}
         this.httprouter.handle(req, res, tail)
     }
 
@@ -42,13 +44,13 @@ class Application extends http.Server {
     listen() {
         this.on('request', this.handleHTTPRequest)
         this.on('upgrade', this.handleWSUpgrade)
-        super.listen(arguments)
+        super.listen(...arguments)
     }
 }
 
-for(let method of http.METHODS) {
-    Application.prototype[method] = (path, handle) => {
-        this.httprouter[method](path, handle)
+for(let method of METHODS) {
+    Application.prototype[method.toLowerCase()] = function(path, handle) {
+        this.httprouter[method.toLowerCase()](path, handle)
     }
 }
 

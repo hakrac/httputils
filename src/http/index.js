@@ -1,14 +1,24 @@
 const http = require('http')
-const url = require('url')
 
-class HttpRouter {
+const {Route} = require('../route')
+
+const METHODS = [
+    'GET',
+    'POST',
+    'DELETE',
+    'PUT',
+    'OPTIONS',
+    'HEAD'
+]
+
+class HTTPRouter {
 
     constructor() {
         this.stack = []
     }
 
     use(path, ...handlers) {
-        if(typeof path === 'function' || path instanceof HttpRouter) {
+        if(typeof path === 'function' || path instanceof HTTPRouter) {
             handlers = [path, ...handlers]
             path = '/'
         }
@@ -32,20 +42,27 @@ class HttpRouter {
         let _next = (err) => {
             while(idx < this.stack.length) {
                 let {route, handle} = this.stack[idx++]
-                let urlInfo = url.parse(req.url)
 
-                if(!route.match(urlInfo)) {
+                if(!route.match(req.relativeUrl)) {
                     continue
                 }
-
+                
                 if(err) {
                     if(typeof handle.handle === 'function') {
+                        req.relativeUrl = route.relative(req.relativeUrl)
                         handle.handle(err, req, res, _next)
                     } else if(handle.length === 4) {
                         handle(err, req, res, _next)
                     }
                 } else {
-                    handle(req, res, _next)
+                    if(typeof handle.handle === 'function') {
+                        req.relativeUrl = route.relative(req.relativeUrl)
+                        handle.handle(req, res, _next)
+                    } else if(handle.length === 3) {
+                        handle(req, res, _next)
+                    } else if (handle.length === 2 && route.matchFull(req.relativeUrl)) {
+                        handle(req, res)
+                    }
                 }
             }
             next()
@@ -55,11 +72,16 @@ class HttpRouter {
 
 }
 
-for(let method of http.METHODS) {
-    HttpRouter.prototype[method] = (path, handle) => {
+for(let method of METHODS) {
+    HTTPRouter.prototype[method.toLowerCase()] = function (path, handle) {
         this.stack.push({
-            route: new Route(path),
-            handle
+            route: new Route(path, method),
+            handle,
         })
     }
+}
+
+module.exports = {
+    HTTPRouter,
+    METHODS
 }
