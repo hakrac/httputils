@@ -28,7 +28,7 @@ httprouter.get('/bar', (req, res) => {
     res.write('/foo/bar')
 })
 
-wsrouter.upgrade('/', (req, socket, head, next) => {
+wsrouter.use('/', (req, socket, head, next) => {
     console.log('upgrade to websocket on /foo')
     next()
 })
@@ -38,7 +38,7 @@ wsrouter.connection('/bar', (ws, req) => {
     ws.send('bar!!!')
 })
 
-app.ws.connection('/foo', wsrouter)
+app.ws.use('/foo', wsrouter)
 app.http.use('/foo', httprouter)
 
 

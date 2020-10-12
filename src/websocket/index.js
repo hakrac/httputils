@@ -6,7 +6,7 @@ class WebSocketRouter {
         this.stack = []
     }
 
-    upgrade(path, ...handlers) {
+    use(path, ...handlers) {
         if(typeof path === 'function' || path instanceof WebSocketRouter) {
             handlers = [path, ...handlers]
             path = '*'
