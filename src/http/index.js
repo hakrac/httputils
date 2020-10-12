@@ -39,12 +39,10 @@ class HTTPRouter {
             [err, req, res, after] = arguments
         }
 
-        req.parentUrl = req.parentUrl || req.relativeUrl
         let idx = 0
-        let _next = async (err) => {
+        let next = async (err) => {
             while(idx < this.stack.length) {
                 let {route, handle} = this.stack[idx++]
-                console.log(route, req.relativeUrl)
                 let match = route.match(req.relativeUrl) 
                 if(!match) {
                     continue
@@ -54,18 +52,20 @@ class HTTPRouter {
                 req.params = {...match.groups, ...req.params}
                 
                 if(err) {
-                    if(typeof handle.handle === 'function') {
+                    if(handle instanceof HTTPRouter) {
+                        req.parentUrl = req.relativeUrl
                         req.relativeUrl = route.relative(req.relativeUrl)
-                        await handle.handle(err, req, res, _next)
+                        await handle.handle(err, req, res, next)
                     } else if(handle.length === 4) {
-                        await handle(err, req, res, _next)
+                        await handle(err, req, res, next)
                     }
                 } else {
-                    if(typeof handle.handle === 'function') {
+                    if(handle instanceof HTTPRouter) {
+                        req.parentUrl = req.relativeUrl
                         req.relativeUrl = route.relative(req.relativeUrl)
-                        await handle.handle(req, res, _next)
+                        await handle.handle(req, res, next)
                     } else if(handle.length === 3) {
-                        await handle(req, res, _next)
+                        await handle(req, res, next)
                     } else if (handle.length === 2 && route.matchFull(req.relativeUrl)) {
                         await handle(req, res)
                     }
@@ -73,11 +73,11 @@ class HTTPRouter {
                 req.params = originalParams
                 return
             }
-            // on tail found
-            req.relativeUrl = req.parentUrl
+            // no tail found
+            req.relativeUrl = req.parentUrl || req.relativeUrl
             await after(err)
         }
-        await _next(err)
+        await next(err)
     }
 
 }

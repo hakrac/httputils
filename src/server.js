@@ -1,14 +1,18 @@
 const http = require('http')
 const WebSocket = require('ws')
 
+const {tail, catchError} = require('./error')
 const {WebSocketRouter} = require('./websocket')
 const {HTTPRouter, METHODS} = require('./http')
 
 
 class Application extends http.Server {
 
-    constructor() {
-        super(...arguments)
+    constructor(Request, Response) {
+        super({
+            IncomingMessage: Request,
+            ServerResponse: Response
+        })
         this.wss = new WebSocket.Server({ clientTracking: false, noServer: true })
         this.ws = new WebSocketRouter()
         this.http = new HTTPRouter()
@@ -16,17 +20,16 @@ class Application extends http.Server {
 
     async handleHTTPRequest(req, res) {
         req.relativeUrl = req.url
-        let tail = () => {
-            console.log('http tail')
-        }
-        await this.http.handle(req, res, tail)
+
+        this.http.use(tail)
+        this.http.use(catchError)
+        await this.http.handle(req, res, null)
     }
 
     async handleWSUpgrade(req, socket, head) {
         req.relativeUrl = req.url
         
         await this.ws.handleUpgrade(req, socket, head, () => {
-            console.log('upgrade')
             let originalUrl = req.relativeUrl
             req.relativeUrl = req.url
             this.wss.handleUpgrade(req, socket, head, async websocket => {

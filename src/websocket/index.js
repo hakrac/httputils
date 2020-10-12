@@ -36,7 +36,6 @@ class WebSocketRouter {
     async handleUpgrade(req, socket, head, after) {
         let idx = 0
         let _next = async () => {
-            console.log('idx', idx)
             while(idx < this.stack.length) {
                 let { route, handle } = this.stack[idx++]
                 let match = route.match(req.relativeUrl)
@@ -49,22 +48,18 @@ class WebSocketRouter {
                 req.params = {...match.groups, ...req.params}
 
                 if(handle instanceof WebSocketRouter) {
-                    let originalUrl = req.relativeUrl
+                    req.parentUrl = req.relativeUrl
                     req.relativeUrl = route.relative(req.relativeUrl)
-                    console.log('1')
                     await handle.handleUpgrade(req, socket, head, _next)
-                    console.log('5')
-                    req.relativeUrl = originalUrl
                 } else if(handle.length === 4) {
-                    console.log('2')
                     await handle(req, socket, head, _next)
-                    console.log('4')
                 }
 
                 req.params = originalParams
                 return
             }
             // we are through this upgrade stack
+            req.relativeUrl = req.parentUrl || req.relativeUrl
             await after()
         }
         await _next()
@@ -72,19 +67,20 @@ class WebSocketRouter {
 
     async handleConnection(ws, req) {
         for(let {route, handle} of this.stack) {
-            console.log('3')
-            console.log(route, req.relativeUrl)
-            if(route.match(req.relativeUrl)) {
+            let match = route.match(req.relativeUrl)
+            if(match) {
+                req.params = {...match.groups, ...req.params}
                 if(handle instanceof WebSocketRouter) {
-                    let originalUrl = req.relativeUrl
+                    req.parentUrl = req.relativeUrl
                     req.relativeUrl = route.relative(req.relativeUrl)
                     await handle.handleConnection(ws, req)
-                    req.relativeUrl = originalUrl
-                } else if(handle.length === 2) {
+                } else if(handle.length === 2 && route.matchFull(req.relativeUrl)) {
                     await handle(ws, req)
                 }
             }
         }
+
+        req.relativeUrl = req.parentUrl || req.relativeUrl
     }
 }
 
