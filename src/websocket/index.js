@@ -33,9 +33,9 @@ class WebSocketRouter {
         })
     }
 
-    handleUpgrade(req, socket, head, after) {
+    async handleUpgrade(req, socket, head, after) {
         let idx = 0
-        let _next = () => {
+        let _next = async () => {
             while(idx < this.stack.length) {
                 let { route, handle } = this.stack[idx++]
 
@@ -46,28 +46,28 @@ class WebSocketRouter {
                 if(handle instanceof WebSocketRouter) {
                     let originalUrl = req.relativeUrl
                     req.relativeUrl = route.relative(req.relativeUrl)
-                    handle.handleUpgrade(req, socket, head, _next)
+                    await handle.handleUpgrade(req, socket, head, _next)
                     req.relativeUrl = originalUrl
                 }
                 if(handle.length === 4) {
-                    handle(req, socket, head, _next)
+                    await handle(req, socket, head, _next)
                 }
             }
         }
-        _next()
-        after()
+        await _next()
+        await after()
     }
 
-    handleConnection(ws, req) {
+    async handleConnection(ws, req) {
         for(let {route, handle} of this.stack) {
             if(route.match(req.relativeUrl)) {
                 if(handle instanceof WebSocketRouter) {
                     let originalUrl = req.relativeUrl
                     req.relativeUrl = route.relative(req.relativeUrl)
-                    handle.handleConnection(ws, req)
+                    await handle.handleConnection(ws, req)
                     req.relativeUrl = originalUrl
                 } else if(handle.length === 2) {
-                    handle(ws, req)
+                    await handle(ws, req)
                 }
             }
         }

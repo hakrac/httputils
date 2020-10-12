@@ -1,4 +1,5 @@
 const http = require('http')
+const utils = require('../utils')
 
 const {Route} = require('../route')
 
@@ -30,7 +31,7 @@ class HTTPRouter {
         }
     }
 
-    handle() {
+    async handle() {
         let err, req, res, after
         if(arguments.length < 4) {
             [req, res, after] = arguments
@@ -39,7 +40,7 @@ class HTTPRouter {
         }
 
         let idx = 0
-        let _next = (err) => {
+        let _next = async (err) => {
             while(idx < this.stack.length) {
                 let {route, handle} = this.stack[idx++]
 
@@ -51,25 +52,27 @@ class HTTPRouter {
                     if(typeof handle.handle === 'function') {
                         let originalUrl = req.relativeUrl
                         req.relativeUrl = route.relative(req.relativeUrl)
-                        handle.handle(err, req, res, _next)
+                        await handle.handle(err, req, res, _next)
                         req.relativeUrl = originalUrl
                     } else if(handle.length === 4) {
-                        handle(err, req, res, _next)
+                        await handle(err, req, res, _next)
                     }
                 } else {
                     if(typeof handle.handle === 'function') {
+                        let originalUrl = req.relativeUrl
                         req.relativeUrl = route.relative(req.relativeUrl)
-                        handle.handle(req, res, _next)
+                        await handle.handle(req, res, _next)
+                        req.relativeUrl = originalUrl
                     } else if(handle.length === 3) {
-                        handle(req, res, _next)
+                        await handle(req, res, _next)
                     } else if (handle.length === 2 && route.matchFull(req.relativeUrl)) {
-                        handle(req, res)
+                        await handle(req, res)
                     }
                 }
             }
         }
-        _next(err)
-        after(err)
+        await _next(err)
+        await after(err)
     }
 
 }

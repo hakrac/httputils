@@ -8,26 +8,26 @@ const {HTTPRouter, METHODS} = require('./http')
 class Application extends http.Server {
 
     constructor() {
-        super(arguments)
+        super(...arguments)
         this.wss = new WebSocket.Server({ clientTracking: false, noServer: true })
         this.ws = new WebSocketRouter()
         this.http = new HTTPRouter()
     }
 
-    handleHTTPRequest(req, res) {
+    async handleHTTPRequest(req, res) {
         req.relativeUrl = req.url
         let tail = () => {}
-        this.httprouter.handle(req, res, tail)
+        await this.http.handle(req, res, tail)
     }
 
-    handleWSUpgrade(req, socket, head) {
+    async handleWSUpgrade(req, socket, head) {
         req.relativeUrl = req.url
         
-        this.ws.handleUpgrade(req, socket, head, () => {
+        await this.ws.handleUpgrade(req, socket, head, () => {
             console.log('upgrade')
-            this.wss.handleUpgrade(req, socket, head, websocket => {
-                this.ws.handleConnection(websocket, req)
+            this.wss.handleUpgrade(req, socket, head, async websocket => {
                 this.wss.emit('connection', websocket, req)
+                await this.ws.handleConnection(websocket, req)
             })
         })
     }
