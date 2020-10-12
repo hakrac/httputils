@@ -10,20 +10,8 @@ class Application extends http.Server {
     constructor() {
         super(arguments)
         this.wss = new WebSocket.Server({ clientTracking: false, noServer: true })
-        this.wsrouter = new WebSocketRouter()
-        this.httprouter = new HTTPRouter()
-    }
-
-    use() {
-        this.httprouter.use(...arguments)
-    }
-
-    upgrade() {
-        this.wsrouter.upgrade(...arguments)
-    }
-
-    ws() {
-        this.wsrouter.ws(...arguments)
+        this.ws = new WebSocketRouter()
+        this.http = new HTTPRouter()
     }
 
     handleHTTPRequest(req, res) {
@@ -33,10 +21,13 @@ class Application extends http.Server {
     }
 
     handleWSUpgrade(req, socket, head) {
-        this.wsrouter.handleUpgrade(req, socket, head, () => {
-            this.wss.handleUpgrade(req, socket, head, ws => {
-                this.wsrouter.handleConnnection(ws)
-                this.wss.emit('connection', ws)
+        req.relativeUrl = req.url
+        
+        this.ws.handleUpgrade(req, socket, head, () => {
+            console.log('upgrade')
+            this.wss.handleUpgrade(req, socket, head, websocket => {
+                this.ws.handleConnection(websocket, req)
+                this.wss.emit('connection', websocket, req)
             })
         })
     }

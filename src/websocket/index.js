@@ -1,3 +1,5 @@
+const {Route} = require('../route')
+
 class WebSocketRouter {
 
     constructor() {
@@ -7,12 +9,9 @@ class WebSocketRouter {
     upgrade(path, ...handlers) {
         if(typeof path === 'function' || path instanceof WebSocketRouter) {
             handlers = [path, ...handlers]
-            path = '/'
+            path = '*'
         }
         for(let handle of handlers) {
-            if(handle instanceof WebSocketRouter) {
-                handle = handle.handleUpgrade
-            }
             if(handle.length >= 3) {
                 this.stack.push({
                     route: new Route(path),
@@ -22,18 +21,19 @@ class WebSocketRouter {
         }
     }
 
-    ws(path, handle) {
-        if(typeof path === 'function') {
+    connection(path, handle) {
+        if(typeof path === 'function' || path instanceof WebSocketRouter) {
             handle = path
-            path = '/'
+            path = '*'
         }
+
         this.stack.push({
             route: new Route(path),
             handle
         })
     }
 
-    handleUpgrade(req, socket, head, next) {
+    handleUpgrade(req, socket, head, after) {
         let idx = 0
         let _next = () => {
             while(idx < this.stack.length) {
@@ -43,19 +43,32 @@ class WebSocketRouter {
                     continue;
                 }
 
-                if(handle.length <= 4) {
+                if(handle instanceof WebSocketRouter) {
+                    let originalUrl = req.relativeUrl
+                    req.relativeUrl = route.relative(req.relativeUrl)
+                    handle.handleUpgrade(req, socket, head, _next)
+                    req.relativeUrl = originalUrl
+                }
+                if(handle.length === 4) {
                     handle(req, socket, head, _next)
                 }
             }
-            next()
         }
         _next()
+        after()
     }
 
-    handleConnection(req, ws) {
+    handleConnection(ws, req) {
         for(let {route, handle} of this.stack) {
-            if(route.match(req.relativeUrl) && handle.length === 1) {
-                handle(req, ws)
+            if(route.match(req.relativeUrl)) {
+                if(handle instanceof WebSocketRouter) {
+                    let originalUrl = req.relativeUrl
+                    req.relativeUrl = route.relative(req.relativeUrl)
+                    handle.handleConnection(ws, req)
+                    req.relativeUrl = originalUrl
+                } else if(handle.length === 2) {
+                    handle(ws, req)
+                }
             }
         }
     }

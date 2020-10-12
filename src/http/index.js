@@ -31,11 +31,11 @@ class HTTPRouter {
     }
 
     handle() {
-        let err, req, res, next
+        let err, req, res, after
         if(arguments.length < 4) {
-            [req, res, next] = arguments
+            [req, res, after] = arguments
         } else if (arguments.length === 4) {
-            [err, req, res, next] = arguments
+            [err, req, res, after] = arguments
         }
 
         let idx = 0
@@ -49,8 +49,10 @@ class HTTPRouter {
                 
                 if(err) {
                     if(typeof handle.handle === 'function') {
+                        let originalUrl = req.relativeUrl
                         req.relativeUrl = route.relative(req.relativeUrl)
                         handle.handle(err, req, res, _next)
+                        req.relativeUrl = originalUrl
                     } else if(handle.length === 4) {
                         handle(err, req, res, _next)
                     }
@@ -65,9 +67,9 @@ class HTTPRouter {
                     }
                 }
             }
-            next()
         }
         _next(err)
+        after(err)
     }
 
 }

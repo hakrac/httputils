@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+    <head>
+
+    </head>
+    <body>
+        <script>
+            let websocket = new WebSocket('ws://localhost:8080/foo/bar')
+
+            websocket.addEventListener('message', message => {
+                console.log(message)
+                websocket.send(message.data)
+            })
+        </script>
+    </body>
+</html>
