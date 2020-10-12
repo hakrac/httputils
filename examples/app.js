@@ -5,47 +5,39 @@ const {WebSocketRouter} = require('../src/websocket')
 const app = new Application()
 
 const httprouter = new HTTPRouter()
+const test = new HTTPRouter()
 const wsrouter = new WebSocketRouter()
 
 
-app.http.use('/', async (req, res, next) => {
-    console.log('request', req.relativeUrl)
+wsrouter.use('/', async (req, socket, head, next) => {
+    console.log('upgrade to websocket on /foo')
     await next()
 })
 
-app.http.get('/', (req, res) => {
-    res.write('test')
+wsrouter.connection('/bar', (ws, req) => {
+    console.log('ws://foo/bar')
+    ws.send('bar!!!')
+})
+
+app.ws.connection('/foo', wsrouter)
+
+
+test.use('/hello', (req, res, next) => {
+    next()
+})
+
+httprouter.use('/', (req, res, next) => {
+    next()
+})
+
+httprouter.get('/hello', (req, res) => {
+    res.write('Hello')
     res.end()
 })
 
-// app.http.get('/test', (req, res) => {
-//     res.write('Hello')
-//     res.end()
-// })
-
-// httprouter.use('/', (req, res, next) => {
-//     res.write('Hello \n')
-//     next()
-//     res.end()
-// })
-
-// httprouter.get('/bar', (req, res) => {
-//     res.write('/foo/bar')
-// })
-
-// wsrouter.use('/', (req, socket, head, next) => {
-//     console.log('upgrade to websocket on /foo')
-//     next()
-// })
-
-// wsrouter.connection('/bar', (ws, req) => {
-//     console.log('ws/bar')
-//     ws.send('bar!!!')
-// })
-
-// app.ws.use('/foo', wsrouter)
-// app.http.use('/foo', httprouter)
-
+app.http.use('/foo', test)
+app.http.use('/foo', httprouter)
+app.ws.use(wsrouter)
 
 app.listen(8080, '', () => {
     console.log('> Server listening on port 8080')

@@ -16,7 +16,9 @@ class Application extends http.Server {
 
     async handleHTTPRequest(req, res) {
         req.relativeUrl = req.url
-        let tail = () => {}
+        let tail = () => {
+            console.log('http tail')
+        }
         await this.http.handle(req, res, tail)
     }
 
@@ -25,10 +27,13 @@ class Application extends http.Server {
         
         await this.ws.handleUpgrade(req, socket, head, () => {
             console.log('upgrade')
+            let originalUrl = req.relativeUrl
+            req.relativeUrl = req.url
             this.wss.handleUpgrade(req, socket, head, async websocket => {
                 this.wss.emit('connection', websocket, req)
                 await this.ws.handleConnection(websocket, req)
             })
+            req.relativeUrl = originalUrl
         })
     }
 

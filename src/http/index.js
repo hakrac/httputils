@@ -39,46 +39,56 @@ class HTTPRouter {
             [err, req, res, after] = arguments
         }
 
+        req.parentUrl = req.parentUrl || req.relativeUrl
         let idx = 0
         let _next = async (err) => {
             while(idx < this.stack.length) {
                 let {route, handle} = this.stack[idx++]
-
-                if(!route.match(req.relativeUrl)) {
+                console.log(route, req.relativeUrl)
+                let match = route.match(req.relativeUrl) 
+                if(!match) {
                     continue
                 }
+
+                let originalParams = req.params
+                req.params = {...match.groups, ...req.params}
                 
                 if(err) {
                     if(typeof handle.handle === 'function') {
-                        let originalUrl = req.relativeUrl
                         req.relativeUrl = route.relative(req.relativeUrl)
                         await handle.handle(err, req, res, _next)
-                        req.relativeUrl = originalUrl
                     } else if(handle.length === 4) {
                         await handle(err, req, res, _next)
                     }
                 } else {
                     if(typeof handle.handle === 'function') {
-                        let originalUrl = req.relativeUrl
                         req.relativeUrl = route.relative(req.relativeUrl)
                         await handle.handle(req, res, _next)
-                        req.relativeUrl = originalUrl
                     } else if(handle.length === 3) {
                         await handle(req, res, _next)
                     } else if (handle.length === 2 && route.matchFull(req.relativeUrl)) {
                         await handle(req, res)
                     }
                 }
+                req.params = originalParams
+                return
             }
+            // on tail found
+            req.relativeUrl = req.parentUrl
+            await after(err)
         }
         await _next(err)
-        await after(err)
     }
 
 }
 
 for(let method of METHODS) {
     HTTPRouter.prototype[method.toLowerCase()] = function (path, handle) {
+        if(typeof path === 'function') {
+            handle = path
+            path = '*'
+        }
+
         this.stack.push({
             route: new Route(path, method),
             handle,

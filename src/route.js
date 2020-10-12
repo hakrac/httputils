@@ -10,7 +10,7 @@ class Route {
             pattern = '.*'
         } else {
             pattern = '^\/' + path
-                .replace(/:(\w*)/, '(?<$1>\\w+)')   // replace params with group
+                .replace(/:(\w*)/g, '(?<$1>\\w+)')   // replace params with group
                 .replace(/^\/+/, '')                // remove intial slash
                 .replace(/\/+$/, '')                // remove trailing slash
                 .replace(/\^/, '' )                 // remove all carets

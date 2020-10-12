@@ -45,6 +45,10 @@ describe('Route', () => {
         let route = new Route('/foo/:name')
 
         expect(route.regPath).toEqual(/^\/foo\/(?<name>\w+)/)
+
+        route = new Route('/foo/:name/:age')
+
+        expect(route.regPath).toEqual(/^\/foo\/(?<name>\w+)\/(?<age>\w+)/)
     })
 
     test('match everything on multi path wildcard', () => {
