@@ -20,23 +20,20 @@ class Application extends http.Server {
 
     async handleHTTPRequest(req, res) {
         req.relativeUrl = req.url
-
-        this.http.use(tail)
-        this.http.use(catchError)
-        await this.http.handle(req, res, null)
+        await this.http.handle(req, res, () => {})
     }
 
     async handleWSUpgrade(req, socket, head) {
         req.relativeUrl = req.url
         
         await this.ws.handleUpgrade(req, socket, head, () => {
-            let originalUrl = req.relativeUrl
+            let parentUrl = req.relativeUrl
             req.relativeUrl = req.url
             this.wss.handleUpgrade(req, socket, head, async websocket => {
                 this.wss.emit('connection', websocket, req)
                 await this.ws.handleConnection(websocket, req)
             })
-            req.relativeUrl = originalUrl
+            req.relativeUrl = parentUrl
         })
     }
 

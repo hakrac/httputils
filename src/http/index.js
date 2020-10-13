@@ -1,9 +1,7 @@
-const http = require('http')
-const utils = require('../utils')
-
 const {Route} = require('../route')
 
 const METHODS = [
+    'ALL',
     'GET',
     'POST',
     'DELETE',
@@ -18,68 +16,103 @@ class HTTPRouter {
         this.stack = []
     }
 
+    param(param, handle) {
+        if(typeof param === 'string' && typeof handle === 'function') {
+            this.stack.push({
+                param,
+                errorHandler: false,
+                handler
+            })
+        }
+    }
+
     use(path, ...handlers) {
         if(typeof path === 'function' || path instanceof HTTPRouter) {
             handlers = [path, ...handlers]
             path = '/'
         }
         for(let handle of handlers) {
-            this.stack.push({
-                route: new Route(path),
-                handle
-            })
+            if(typeof handle === 'function' || handle instanceof HTTPRouter) {
+
+                this.stack.push({
+                    route: new Route(path, false),
+                    handle,
+                    errorHandler: handle instanceof HTTPRouter || handle.length === 4
+                })
+            }
         }
     }
 
     async handle() {
-        let err, req, res, after
-        if(arguments.length < 4) {
-            [req, res, after] = arguments
+        let err, req, res, out
+        if(arguments.length === 3) {
+            [req, res, out] = arguments
         } else if (arguments.length === 4) {
-            [err, req, res, after] = arguments
+            [err, req, res, out] = arguments
         }
+
+        out = isolate(out, req, 'relativeUrl', 'params')
+
+        req.relativeUrl = this.relativeUrl || req.relativeUrl
 
         let idx = 0
         let next = async (err) => {
             while(idx < this.stack.length) {
-                let {route, handle} = this.stack[idx++]
+                let {route, handle, errorHandler} = this.stack[idx++]
+                
+                if(!route) {
+                    continue
+                }
+
                 let match = route.match(req.relativeUrl) 
                 if(!match) {
                     continue
                 }
-
-                let originalParams = req.params
-                req.params = {...match.groups, ...req.params}
                 
-                if(err) {
-                    if(handle instanceof HTTPRouter) {
-                        req.parentUrl = req.relativeUrl
-                        req.relativeUrl = route.relative(req.relativeUrl)
-                        await handle.handle(err, req, res, next)
-                    } else if(handle.length === 4) {
-                        await handle(err, req, res, next)
-                    }
-                } else {
-                    if(handle instanceof HTTPRouter) {
-                        req.parentUrl = req.relativeUrl
-                        req.relativeUrl = route.relative(req.relativeUrl)
-                        await handle.handle(req, res, next)
-                    } else if(handle.length === 3) {
-                        await handle(req, res, next)
-                    } else if (handle.length === 2 && route.matchFull(req.relativeUrl)) {
-                        await handle(req, res)
-                    }
+                next = isolate(next, req, 'params')
+                req.params = {...req.params, ...match.groups, ...this.params}
+                let args = []
+
+                if(handle instanceof HTTPRouter) {
+                    handle.relativeUrl = route.relative(req.relativeUrl)
+                    handle.params = match.groups
+                    handle = handle.handle.bind(handle)
                 }
-                req.params = originalParams
-                return
+
+                if(err) {
+                    if(errorHandler) {
+                        args = [err, req, res, () => next(err)]
+                    } else {
+                        args = [err]
+                        handle = next
+                    }
+
+                } else {
+                    args = [req, res, next]
+                }
+
+                return await handle(...args)
             }
-            // no tail found
-            req.relativeUrl = req.parentUrl || req.relativeUrl
-            await after(err)
+            await out(err)
         }
         await next(err)
     }
 
+}
+
+// isolates the function to changes made to the properties of the object
+function isolate(fn, obj, ...props) {
+    let copy = {}
+    for(let prop of props) {
+        copy[prop] = obj[prop]
+    }
+
+    return function() {
+        for(let prop of props) {
+            obj[prop] = copy[prop]
+        }
+        return fn(...arguments)
+    }
 }
 
 for(let method of METHODS) {
@@ -90,7 +123,7 @@ for(let method of METHODS) {
         }
 
         this.stack.push({
-            route: new Route(path, method),
+            route: new Route(path, true),
             handle,
         })
     }
@@ -98,5 +131,6 @@ for(let method of METHODS) {
 
 module.exports = {
     HTTPRouter,
+    isolate,
     METHODS
 }

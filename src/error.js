@@ -5,8 +5,7 @@ function tail(req, res, next) {
 
 
 function catchError(err, req, res, next) {
-    console.warn(err)
-    res.write('Server Error')
+    res.write('Server Error ' + err)
     res.end()
 }
 

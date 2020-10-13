@@ -3,36 +3,27 @@ const MULTI_PATH_WILDCARD = '*'
 
 class Route {
 
-    constructor(path=MULTI_PATH_WILDCARD, http_method='GET') {
+    constructor(path=MULTI_PATH_WILDCARD, full=false) {
         let pattern
         
         if(path.trim() === MULTI_PATH_WILDCARD) {
             pattern = '.*'
         } else {
             pattern = '^\/' + path
-                .replace(/:(\w*)/g, '(?<$1>\\w+)')   // replace params with group
+                .replace(/:(\w*)/g, '(?<$1>\\w+)')  // replace params with group
                 .replace(/^\/+/, '')                // remove intial slash
                 .replace(/\/+$/, '')                // remove trailing slash
                 .replace(/\^/, '' )                 // remove all carets
         }
 
-        this.regPath = new RegExp(pattern)
-        this.regPathGlobal = new RegExp(pattern + '$')
-        this.method = http_method
+        this.regPath = full ? new RegExp(pattern + '$') : new RegExp(pattern)
     }
 
 
     // check if path starts with this route
     match(path, http_method='GET') {
         path = Route.sanitize(path)
-        return this.method === http_method && path.match(this.regPath)
-    }
-
-
-    // check if path fully matches this route
-    matchFull(path, http_method='GET') {
-        path = Route.sanitize(path)
-        return this.method === http_method && path.match(this.regPathGlobal)
+        return path.match(this.regPath)
     }
 
     // make path relative to this route
