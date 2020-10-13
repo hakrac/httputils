@@ -31,7 +31,7 @@ class Application extends http.Server {
             let parentUrl = req.relativeUrl
             req.relativeUrl = req.url
             this.wss.handleUpgrade(req, socket, head, async websocket => {
-                this.emit
+                this.wss.emit('connection', websocket, req)
                 await fn(websocket, req)
             })
             req.relativeUrl = parentUrl
