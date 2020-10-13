@@ -29,13 +29,17 @@ class Route {
     // make path relative to this route
     relative(path) {
         path = Route.sanitize(path)
-        return path.replace(this.regPath, '') || '/'
+        path = path.replace(this.regPath, '')
+        if(path[0] !== '/') {
+            path = '/' + path
+        }
+        return path
     }
 
 }
 
 Route.sanitize = function(path) {
-    return '/' + path
+    return '/' + path.trim()
         .replace(/^\//, '')                         // remove intial slash
         .replace(/\/$/, '')                         // remove trailing slash
 }

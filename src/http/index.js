@@ -1,4 +1,5 @@
 const {Route} = require('../route')
+const {isolate} = require('../utils')
 
 const METHODS = [
     'ALL',
@@ -53,6 +54,7 @@ class HTTPRouter {
 
         out = isolate(out, req, 'relativeUrl', 'params')
 
+        this.params = {}
         req.relativeUrl = this.relativeUrl || req.relativeUrl
 
         let idx = 0
@@ -86,12 +88,17 @@ class HTTPRouter {
                         args = [err]
                         handle = next
                     }
-
                 } else {
-                    args = [req, res, next]
+                    if(handle.length !== 4) {
+                        args = [req, res, next]
+                    }
                 }
 
-                return await handle(...args)
+                try {
+                    return await handle(...args)
+                } catch(err) {
+                    await next(err)
+                }
             }
             await out(err)
         }
@@ -100,20 +107,6 @@ class HTTPRouter {
 
 }
 
-// isolates the function to changes made to the properties of the object
-function isolate(fn, obj, ...props) {
-    let copy = {}
-    for(let prop of props) {
-        copy[prop] = obj[prop]
-    }
-
-    return function() {
-        for(let prop of props) {
-            obj[prop] = copy[prop]
-        }
-        return fn(...arguments)
-    }
-}
 
 for(let method of METHODS) {
     HTTPRouter.prototype[method.toLowerCase()] = function (path, handle) {
@@ -123,6 +116,7 @@ for(let method of METHODS) {
         }
 
         this.stack.push({
+            method,
             route: new Route(path, true),
             handle,
         })

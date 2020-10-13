@@ -1,4 +1,5 @@
 const {Route} = require('../route')
+const {isolate} = require('../utils')
 
 class WebSocketRouter {
 
@@ -9,15 +10,14 @@ class WebSocketRouter {
     use(path, ...handlers) {
         if(typeof path === 'function' || path instanceof WebSocketRouter) {
             handlers = [path, ...handlers]
-            path = '/'
+            path = ''
         }
         for(let handle of handlers) {
-            if(handle.length >= 3) {
-                this.stack.push({
-                    route: new Route(path),
-                    handle
-                })
-            }
+            this.stack.push({
+                route: new Route(path, false),
+                handle,
+                errorHandler: handle instanceof WebSocketRouter || handle.length === 4
+            })
         }
     }
 
@@ -28,59 +28,81 @@ class WebSocketRouter {
         }
 
         this.stack.push({
-            route: new Route(path),
+            route: new Route(path, true),
             handle
         })
     }
 
-    async handleUpgrade(req, socket, head, after) {
-        let idx = 0
-        let _next = async () => {
-            while(idx < this.stack.length) {
-                let { route, handle } = this.stack[idx++]
-                let match = route.match(req.relativeUrl)
+    async handle() {
+        let err, req, socket, out
+        if(arguments.length === 3) {
+            [req, socket, out] = arguments
+        } else if(arguments.length === 4) {
+            [err, req, socket, out] = arguments 
+        }
 
-                if(handle.length === 2 || !match) {
+        out = isolate(out, req, 'relativeUrl', 'params')
+
+        this.params = {}
+        req.relativeUrl = this.relativeUrl || req.relativeUrl
+
+        let idx = 0
+        let next = async (err) => {
+            while(idx < this.stack.length) {
+                let {route, handle, errorHandler} = this.stack[idx++]
+                
+                if(!route) {
+                    continue
+                }
+
+                let match = route.match(req.relativeUrl) 
+                if(!match) {
                     continue
                 }
                 
-                let originalParams = req.params
-                req.params = {...match.groups, ...req.params}
+                next = isolate(next, req, 'params')
+                req.params = {...req.params, ...match.groups, ...this.params}
+
+                let args = []
 
                 if(handle instanceof WebSocketRouter) {
-                    req.parentUrl = req.relativeUrl
-                    req.relativeUrl = route.relative(req.relativeUrl)
-                    await handle.handleUpgrade(req, socket, head, _next)
-                } else if(handle.length === 4) {
-                    await handle(req, socket, head, _next)
+                    handle.relativeUrl = route.relative(req.relativeUrl)
+                    handle.params = match.groups
+                    handle.upgrade = this.upgrade
+                    handle = handle.handle.bind(handle)
                 }
 
-                req.params = originalParams
-                return
-            }
-            // we are through this upgrade stack
-            req.relativeUrl = req.parentUrl || req.relativeUrl
-            await after()
-        }
-        await _next()
-    }
+                if(err) {
+                    if(errorHandler) {
+                        args = [err, req, socket, () => next(err)]
+                    } else {
+                        args = [err]
+                        handle = next
+                    }
 
-    async handleConnection(ws, req) {
-        for(let {route, handle} of this.stack) {
-            let match = route.match(req.relativeUrl)
-            if(match) {
-                req.params = {...match.groups, ...req.params}
-                if(handle instanceof WebSocketRouter) {
-                    req.parentUrl = req.relativeUrl
-                    req.relativeUrl = route.relative(req.relativeUrl)
-                    await handle.handleConnection(ws, req)
-                } else if(handle.length === 2 && route.matchFull(req.relativeUrl)) {
-                    await handle(ws, req)
+                } else {
+                    if(handle.length === 2) {
+                        args = [handle]
+                        handle = this.upgrade
+                    }
+                    else if(handle.length < 4) {
+                        args = [req, socket, next]
+                    } else {
+                        args = []
+                        handle = next
+                    }
                 }
-            }
-        }
 
-        req.relativeUrl = req.parentUrl || req.relativeUrl
+                try {
+                    return await handle(...args)
+                } catch(err) {
+                    return await next(err)
+                }
+
+            }
+            await out(err)
+        }
+        await next(err)
     }
 }
 

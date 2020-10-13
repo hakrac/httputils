@@ -18,12 +18,12 @@ class MyRequest extends ApplicationRequest {
 const app = createApplication(MyRequest)
 // const httprouter = new HTTPRouter()
 
-app.http.use((req, res, next) => {
-    let start = new Date()
-    next()
-    let diff = new Date() - start
-    res.end(process.memoryUsage().heapTotal / 1024 / 1024 + ' MiB\n' + diff + ' ms')
-})
+// app.http.use((req, res, next) => {
+//     let start = new Date()
+//     next()
+//     let diff = new Date() - start
+//     res.end(process.memoryUsage().heapTotal / 1024 / 1024 + ' MiB\n' + diff + ' ms')
+// })
 
 // let last = null
 // for(let i = 0; i < 1000; i++) {
@@ -37,29 +37,56 @@ app.http.use((req, res, next) => {
 // }
 // app.http.use(httprouter)
 
-const httprouter = new HTTPRouter()
-const httprouter2 = new HTTPRouter()
+// const httprouter = new HTTPRouter()
+// const httprouter2 = new HTTPRouter()
 
-httprouter.use((req, res, next) => {
+// httprouter.use((req, res, next) => {
+//     console.log(req.params)
+//     next()
+// })
+
+// httprouter2.use((req, res, next) => {
+//     console.log(req.params)
+//     next()
+// })
+
+
+// httprouter.use('/:bar', httprouter2)
+// app.http.use('/:foo', httprouter)
+
+// app.http.use('/', (req, res, next) => {
+//     next()
+// })
+
+// app.http.get('/:test', (req, res) => {
+//     console.log(req.params)
+//     res.write('Test')
+//     res.end()
+// })
+
+const wsrouter = new WebSocketRouter()
+const wsrouter2 = new WebSocketRouter()
+
+wsrouter.use('/:name1', (req, socket, next) => {
     console.log(req.params)
+    console.log('upgrade')
     next()
 })
 
-httprouter2.use((req, res, next) => {
+wsrouter.connection('/:name', (ws, req) => {
     console.log(req.params)
-    next()
+    ws.send('Hello')
 })
 
+// wsrouter2.use('/:name2', (req, socket, next) => {
+//     console.log('wsrouter2')
+//     console.log(req.params)
+//     throw new Error('test')
+//     next()
+// })
 
-httprouter.use('/:bar', httprouter2)
-app.http.use('/:foo', httprouter)
-
-app.http.get('/:test', (req, res) => {
-    console.log(req.params)
-    res.write('Test')
-    res.end()
-})
-
+// app.ws.use('/:greet', wsrouter2)
+// app.ws.use('/:greet', wsrouter)
 
 app.listen(8080, '', () => {
     console.log('> Server listening on port 8080')
