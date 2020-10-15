@@ -60,7 +60,7 @@ class HTTPRouter {
         let idx = 0
         let next = async (err) => {
             while(idx < this.stack.length) {
-                let {route, handle, errorHandler} = this.stack[idx++]
+                let {route, handle, errorHandler, method} = this.stack[idx++]
                 
                 if(!route) {
                     continue
@@ -89,7 +89,11 @@ class HTTPRouter {
                         handle = next
                     }
                 } else {
-                    if(handle.length !== 4) {
+                    if((method && method !== req.method.toLowerCase()) ||
+                        (handle.length === 4)) {
+                        args = []
+                        handle = next
+                    } else {
                         args = [req, res, next]
                     }
                 }

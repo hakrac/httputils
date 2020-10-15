@@ -4,19 +4,33 @@ const WebSocket = require('ws')
 const {tail, catchError} = require('./http/error')
 const {wsTail, catchUpgradeError} = require('./websocket/error')
 const {WebSocketRouter} = require('./websocket')
+const {MultiplexingRouter} = require('./websocket/multiplexing')
 const {HTTPRouter, METHODS} = require('./http')
 
 
 class Application extends http.Server {
 
-    constructor(Request, Response, webSocketOptions={}) {
+    constructor(Request, Response, wsMultiplexing=false, wsMultiplexingKey="channel", webSocketOptions={}) {
         super({
             IncomingMessage: Request,
             ServerResponse: Response,
         })
+        this.wsMultiplexing = wsMultiplexing
         this.wss = new WebSocket.Server({ clientTracking: false, noServer: true, ...webSocketOptions})
-        this.ws = new WebSocketRouter()
+        this.ws = wsMultiplexing ? 
+            new MultiplexingRouter(wsMultiplexingKey) : 
+            new WebSocketRouter()
+        this.ws.broadcast = this.broadcast.bind(this)
         this.http = new HTTPRouter()
+    }
+
+    broadcast(message, ws) {
+        let includeMe = ws ? false : true
+        this.wss.clients.forEach(async client => {
+            if((includeMe || client !== ws) && client.readyState === WebSocket.OPEN) {
+                await promisify(cb => client.send(message, cb))
+            }
+        })
     }
 
     async handleHTTPRequest(req, res) {
@@ -42,7 +56,9 @@ class Application extends http.Server {
 
     listen() {
         this.http.use(tail, catchError)
-        this.ws.use(wsTail, catchUpgradeError)
+        if(!this.wsMultiplexing) {
+            this.ws.use(wsTail, catchUpgradeError)
+        }
         this.on('request', this.handleHTTPRequest)
         this.on('upgrade', this.handleWSUpgrade)
         super.listen(...arguments)

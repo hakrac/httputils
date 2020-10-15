@@ -33,7 +33,6 @@ class ApplicationResponse extends http.ServerResponse {
     }
 
     attachment(filename) {
-
     }
 
     append(key, value) {

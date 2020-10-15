@@ -5,11 +5,10 @@
     </head>
     <body>
         <script>
-            let websocket = new WebSocket('ws://localhost:8080/hello/hakim/test')
+            let websocket = new WebSocket('ws://localhost:8080/')
 
-            websocket.addEventListener('message', message => {
-                console.log(message)
-                websocket.send(message.data)
+            websocket.addEventListener('open', () => {
+                websocket.send(JSON.stringify({channel: 'hello', message: 'hello'}))
             })
         </script>
     </body>
