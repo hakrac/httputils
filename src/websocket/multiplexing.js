@@ -39,7 +39,7 @@ class MultiplexingRouter extends EventEmitter {
         this.emit('connection', ws, req)
         ws.on('message', message => {
             let data = JSON.parse(message)
-            this.emit(data[this.multiplexingKey], data)
+            this.emit(data[this.multiplexingKey], ws, data)
         })
         ws.on('close', () => {
             this.emit('close', ws, req)
