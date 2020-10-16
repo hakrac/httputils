@@ -5,13 +5,18 @@ class MultiplexingRouter extends EventEmitter {
         super(...args)
         this.multiplexingKey = multiplexingKey
         this.stack = []
+        this.routers = []
     }
 
     use(...handlers) {
         for(let handle of handlers) {
-            this.stack.push({
-                handle
-            })
+            if(handle instanceof MultiplexingRouter) {
+                this.routers.push(handle)
+            } else {
+                this.stack.push({
+                    handle
+                })
+            }
         }
     }
 
@@ -21,12 +26,6 @@ class MultiplexingRouter extends EventEmitter {
             while(idx < this.stack.length) {
                 let {handle} = this.stack[idx++]
                 
-                if(handle instanceof MultiplexingRouter) {
-                    handle.upgrade = this.upgrade
-                    handle.multiplexingKey = this.multiplexingKey
-                    handle = handle.handle.bind(handle)
-                }
-
                 return handle(req, socket, next)
             }
 
@@ -45,6 +44,10 @@ class MultiplexingRouter extends EventEmitter {
         ws.on('close', () => {
             this.emit('close', ws, req)
         })
+
+        for(let router of this.routers) {
+            router.ws(ws, req)
+        }
     }
 
 

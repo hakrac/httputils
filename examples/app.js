@@ -74,6 +74,14 @@ router.on('hello', message => {
     console.log('message hello', message)
 })
 
+
+const router2 = new MultiplexingRouter()
+
+router2.on('hello', message => {
+    console.log('message 2 hello', message)
+})
+
+router.use(router2 )
 app.ws.use(router)
 
 app.listen(8080, '', () => {
