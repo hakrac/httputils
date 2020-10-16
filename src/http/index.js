@@ -112,7 +112,7 @@ for(let method of METHODS) {
         }
 
         this.stack.push({
-            method,
+            method: method.toLowerCase(),
             route: new Route(path, true),
             handle,
         })
