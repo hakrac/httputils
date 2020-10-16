@@ -11,15 +11,20 @@ const METHODS = require('./http/methods')
 
 class Application extends http.Server {
 
-    constructor(Request, Response, wsMultiplexing=false, wsMultiplexingKey="channel", webSocketOptions={}) {
+    constructor(
+        Request, 
+        Response, 
+        multiplexingOptions={enabled: false, channelKey:"channel"}, 
+        webSocketOptions={}
+    ) {
         super({
             IncomingMessage: Request,
             ServerResponse: Response,
         })
-        this.wsMultiplexing = wsMultiplexing
+        this.wsMultiplexing = multiplexingOptions.enabled
         this.wss = new WebSocket.Server({ clientTracking: false, noServer: true, ...webSocketOptions})
-        this.ws = wsMultiplexing ? 
-            new MultiplexingRouter(wsMultiplexingKey) : 
+        this.ws = this.wsMultiplexing ? 
+            new MultiplexingRouter(multiplexingOptions.channelKey) : 
             new WebSocketRouter()
         this.ws.broadcast = this.broadcast.bind(this)
         this.http = new HTTPRouter()
