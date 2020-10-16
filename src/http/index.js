@@ -1,17 +1,9 @@
-const {Route} = require('../route')
+const Route = require('../route')
+const METHODS = require('./methods')
 const {isolate} = require('../utils')
 
-const METHODS = [
-    'ALL',
-    'GET',
-    'POST',
-    'DELETE',
-    'PUT',
-    'OPTIONS',
-    'HEAD'
-]
-
 class HTTPRouter {
+    relativeUrl
 
     constructor() {
         this.stack = []
@@ -22,7 +14,7 @@ class HTTPRouter {
             this.stack.push({
                 param,
                 errorHandler: false,
-                handler
+                handle
             })
         }
     }
@@ -127,8 +119,4 @@ for(let method of METHODS) {
     }
 }
 
-module.exports = {
-    HTTPRouter,
-    isolate,
-    METHODS
-}
+module.exports = HTTPRouter

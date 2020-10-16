@@ -2,12 +2,6 @@ const {isolate, promisify} = require('../src/utils')
 
 describe('utilities', () => {
 
-    test('promisify', () => {
-        const fn = (name, cb) => cb(name)
-        let promise = promisify(cb => fn('bob', cb))
-        expect(Promise.resolve(promise)).toBe('bob')
-    })
-
     test('isolate', () => {
         let obj = { a: 'a', b: 'b' }
         let fn = () => {

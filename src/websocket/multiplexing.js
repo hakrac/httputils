@@ -44,6 +44,4 @@ class MultiplexingRouter extends EventEmitter {
 
 }
 
-module.exports = {
-    MultiplexingRouter
-}
+module.exports = MultiplexingRouter

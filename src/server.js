@@ -3,9 +3,10 @@ const WebSocket = require('ws')
 
 const {tail, catchError} = require('./http/error')
 const {wsTail, catchUpgradeError} = require('./websocket/error')
-const {WebSocketRouter} = require('./websocket')
-const {MultiplexingRouter} = require('./websocket/multiplexing')
-const {HTTPRouter, METHODS} = require('./http')
+const WebSocketRouter = require('./websocket')
+const MultiplexingRouter = require('./websocket/multiplexing')
+const HTTPRouter = require('./http')
+const METHODS = require('./http/methods')
 
 
 class Application extends http.Server {
@@ -26,9 +27,9 @@ class Application extends http.Server {
 
     broadcast(message, ws) {
         let includeMe = ws ? false : true
-        this.wss.clients.forEach(async client => {
+        this.wss.clients.forEach(client => {
             if((includeMe || client !== ws) && client.readyState === WebSocket.OPEN) {
-                await promisify(cb => client.send(message, cb))
+                client.send(message)
             }
         })
     }
@@ -61,13 +62,13 @@ class Application extends http.Server {
         }
         this.on('request', this.handleHTTPRequest)
         this.on('upgrade', this.handleWSUpgrade)
-        super.listen(...arguments)
+        return super.listen(...arguments)
     }
 }
 
 for(let method of METHODS) {
     Application.prototype[method.toLowerCase()] = function(path, handle) {
-        this.httprouter[method.toLowerCase()](path, handle)
+        this.http[method.toLowerCase()](path, handle)
     }
 }
 

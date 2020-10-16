@@ -21,7 +21,7 @@ class Route {
 
 
     // check if path starts with this route
-    match(path, http_method='GET') {
+    match(path) {
         path = Route.sanitize(path)
         return path.match(this.regPath)
     }
@@ -44,7 +44,5 @@ Route.sanitize = function(path) {
         .replace(/\/$/, '')                         // remove trailing slash
 }
 
-module.exports = {
-    Route
-}
+module.exports = Route
 

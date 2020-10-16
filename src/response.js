@@ -1,8 +1,9 @@
 const http = require("http")
 const {
     promisify
-} = require('./utils')
+} = require('util')
 const cookie = require('cookie')
+
 
 class ApplicationResponse extends http.ServerResponse {
 
@@ -29,7 +30,7 @@ class ApplicationResponse extends http.ServerResponse {
                 throw new Error('Body cannot be `undefined`')
         }
 
-        return promisify(cb => this.end(chunk, cb))
+        this.end(chunk)
     }
 
     attachment(filename) {
@@ -76,6 +77,4 @@ class ApplicationResponse extends http.ServerResponse {
     
 }
 
-module.exports = {
-    ApplicationResponse
-}
+module.exports = ApplicationResponse

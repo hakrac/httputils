@@ -1,7 +1,9 @@
-const {Route} = require('../route')
+const Route = require('../route')
 const {isolate} = require('../utils')
 
 class WebSocketRouter {
+    upgrade
+    relativeUrl
 
     constructor() {
         this.stack = []
@@ -106,6 +108,4 @@ class WebSocketRouter {
     }
 }
 
-module.exports = {
-    WebSocketRouter
-}
+module.exports = WebSocketRouter

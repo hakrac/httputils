@@ -16,7 +16,7 @@ class ApplicationRequest extends http.IncomingMessage {
     }
 
     get xhr() {
-        return get('X-Request-With') === 'XMLHttpRequest'
+        return this.get('X-Request-With') === 'XMLHttpRequest'
     }
 
     get hostname() {
@@ -49,6 +49,4 @@ class ApplicationRequest extends http.IncomingMessage {
 
 }
 
-module.exports = {
-    ApplicationRequest
-}
+module.exports = ApplicationRequest
