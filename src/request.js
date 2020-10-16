@@ -44,7 +44,12 @@ class ApplicationRequest extends http.IncomingMessage {
     }
 
     get cookies() {
-        return cookie.parse(this.get('Cookies'))
+        let cookies = this.get('Cookies')
+        if(typeof cookies === 'string') {
+            return cookie.parse(cookies)
+        } else if(Array.isArray(cookies)) {
+            return cookies.map(c => cookie.parse(c))
+        }
     }
 
 }

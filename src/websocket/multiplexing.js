@@ -1,8 +1,7 @@
 const {EventEmitter} = require('events')
 
 class MultiplexingRouter extends EventEmitter {
-
-    constructor(multiplexingKey, ...args) {
+    constructor(multiplexingKey="channel", ...args) {
         super(...args)
         this.multiplexingKey = multiplexingKey
         this.stack = []
@@ -14,17 +13,21 @@ class MultiplexingRouter extends EventEmitter {
                 handle
             })
         }
-
     }
 
     handle(req, socket, out) {
-        
         let idx = 0
         let next = () => {
             while(idx < this.stack.length) {
                 let {handle} = this.stack[idx++]
                 
-                handle(req, socket, next)
+                if(handle instanceof MultiplexingRouter) {
+                    handle.upgrade = this.upgrade
+                    handle.multiplexingKey = this.multiplexingKey
+                    handle = handle.handle.bind(handle)
+                }
+
+                return handle(req, socket, next)
             }
 
             this.upgrade(this.ws.bind(this))

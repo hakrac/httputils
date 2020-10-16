@@ -6,7 +6,7 @@ const app = express()
 app.use((req, res, next) => {
     let start = new Date()
     next()
-    let diff = new Date() - start
+    let diff = new Date().getTime() - start.getTime()
     res.write(process.memoryUsage().heapTotal / 1024 /1024 + ' MiB\n' + diff + ' ms')
     res.end()
 })

@@ -1,22 +1,14 @@
 const Application = require('../src/server')
-const {HTTPRouter} = require('../src/http')
-const {createApplication} = require('../src/index')
-const {WebSocketRouter} = require('../src/websocket')
-const { ApplicationRequest } = require('../src/request')
-const http = require('../src/http')
-const { ApplicationResponse } = require('../src/response')
+const HTTPRouter = require('../src/http')
+const createApplication = require('../src/index')
+const WebSocketRouter = require('../src/websocket')
+const ApplicationRequest = require('../src/request')
+const ApplicationResponse  = require('../src/response')
+const MultiplexingRouter = require('../src/websocket/multiplexing')
 
-class MyRequest extends ApplicationRequest {
-    constructor() {
-        super(...arguments)
-    }
+class MyRequest extends ApplicationRequest {}
 
-    test() {
-        console.log('test')
-    }
-}
-
-const app = createApplication(MyRequest, ApplicationResponse, true)
+const app = createApplication(MyRequest, ApplicationResponse, { enabled: true, channelKey: 'channel' })
 
 // const httprouter = new HTTPRouter()
 
@@ -76,9 +68,13 @@ const app = createApplication(MyRequest, ApplicationResponse, true)
 // app.ws.use('/:greet', wsrouter2)
 // app.ws.use('/:greet', wsrouter)
 
-app.ws.on('hello', message => {
-    console.log('message', message)
+const router = new MultiplexingRouter()
+
+router.on('hello', message => {
+    console.log('message hello', message)
 })
+
+app.ws.use(router)
 
 app.listen(8080, '', () => {
     console.log('> Server listening on port 8080')
