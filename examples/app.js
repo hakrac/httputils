@@ -34,9 +34,15 @@ const app = createApplication(MyRequest, ApplicationResponse, { enabled: true, c
 const httprouter = new HTTPRouter()
 // const httprouter2 = new HTTPRouter()
 
-httprouter.get('/test/:name', (req, res) => {
-    res.send(req.params.name)
-})
+httprouter.get('/test/:name',
+    (req, res, next) => {
+        console.log(req.params.name)
+        next()
+    },
+    (req, res) => {
+        res.send('Hello')
+    }
+)
 
 // httprouter2.use((req, res, next) => {
 //     console.log(req.params)
@@ -44,9 +50,8 @@ httprouter.get('/test/:name', (req, res) => {
 // })
 
 // httprouter.use('/:bar', httprouter2)
-app.http.use()
 
-app.http.use('/test', httprouter)
+app.http.use(httprouter)
 
 // app.http.use('/', (req, res, next) => {
 //     next()
@@ -84,6 +89,6 @@ app.http.use('/test', httprouter)
 // router.use(router2 )
 // app.ws.use(router)
 
-app.listen(8080, '', () => {
-    console.log('> Server listening on port 8080')
+app.listen(8082, '', () => {
+    console.log('> Server listening on port 8082')
 })

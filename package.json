@@ -1,6 +1,6 @@
 {
   "name": "@hakrac/httputils",
-  "version": "0.0.10",
+  "version": "0.0.13",
   "description": "A realtime mircoframework",
   "main": "src/index.js",
   "scripts": {

@@ -1,3 +1,8 @@
+import ApplicationRequest from "../request"
+import ApplicationResponse from "../response"
+
+declare type handler = ((req: ApplicationRequest, res: ApplicationResponse, next: () => void) => any) | HTTPRouter
+
 declare class HTTPRouter {
     relativeUrl: string
     constructor()
@@ -5,20 +10,20 @@ declare class HTTPRouter {
     param(param: string, ...handlers): void
     handle(err, req, res, next): void
     handle(req, res, next): void
-    use(path: string, ...handlers): void
-    use(...handlers): void
-    get(path: string, handler): void
-    get(handler): void
-    post(path: string, handler): void
-    post(handler): void
-    head(path: string, handler): void
-    head(handler): void
-    put(path: string, handler): void
-    put(handler): void
-    delete(path: string, handler): void
-    delete(handler): void
-    all(path: string, handler): void
-    all(handler): void
+    use(path: string, ...handlers: handler[]): void
+    use(...handlers: handler[]): void
+    get(path: string, ...handlers: handler[]): void
+    get(...handlers: handler[]): void
+    post(path: string, ...handlers: handler[]): void
+    post(...handlers: handler[]): void
+    head(path: string, ...handlers: handler[]): void
+    head(...handler: handler[]): void
+    put(path: string, ...handlers: handler[]): void
+    put(...handlers: handler[]): void
+    delete(path: string, ...handlers: handler[]): void
+    delete(...handlers: handler[]): void
+    all(path: string, ...handler: handler[]): void
+    all(...handler: handler[]): void
 }
 
 export = HTTPRouter

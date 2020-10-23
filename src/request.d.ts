@@ -3,7 +3,8 @@
 import http from "http";
 
 declare class ApplicationRequest extends http.IncomingMessage {
-    query: string
+    query: typeof object
+    params: typeof object
     path: string
     hostname: string
     xhr: boolean

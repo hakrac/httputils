@@ -105,17 +105,19 @@ class HTTPRouter {
 
 
 for(let method of METHODS) {
-    HTTPRouter.prototype[method.toLowerCase()] = function (path, handle) {
+    HTTPRouter.prototype[method.toLowerCase()] = function (path, ...handles) {
         if(typeof path === 'function') {
-            handle = path
+            handles.push(path)
             path = '*'
         }
 
-        this.stack.push({
-            method: method.toLowerCase(),
-            route: new Route(path, true),
-            handle,
-        })
+        for(let handle of handles) {
+            this.stack.push({
+                method: method.toLowerCase(),
+                route: new Route(path, true),
+                handle,
+            })
+        }
     }
 }
 
