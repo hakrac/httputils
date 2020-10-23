@@ -33,12 +33,9 @@ class ApplicationResponse extends http.ServerResponse {
         this.end(chunk)
     }
 
-    attachment(filename) {
-    }
+    attachment(filename) {}
 
-    append(key, value) {
-        
-    }
+    append(key, value) {}
 
     json(object) {
         this.set('Content-Type', 'application/json')
@@ -71,9 +68,7 @@ class ApplicationResponse extends http.ServerResponse {
         return this
     }
 
-    download() {
-
-    }
+    download() {}
     
 }
 

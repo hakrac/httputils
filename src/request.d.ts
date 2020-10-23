@@ -3,7 +3,14 @@
 import http from "http";
 
 declare class ApplicationRequest extends http.IncomingMessage {
-    send(body: string | Buffer | object): void
+    query: string
+    path: string
+    hostname: string
+    xhr: boolean
+    cookies: string[]
+    secure: boolean
+
+    accepts(mimeType: string | string[]): boolean
 }
 
 export = ApplicationRequest

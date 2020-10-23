@@ -31,22 +31,22 @@ const app = createApplication(MyRequest, ApplicationResponse, { enabled: true, c
 // }
 // app.http.use(httprouter)
 
-// const httprouter = new HTTPRouter()
+const httprouter = new HTTPRouter()
 // const httprouter2 = new HTTPRouter()
 
-// httprouter.use((req, res, next) => {
-//     console.log(req.params)
-//     next()
-// })
+httprouter.get('/test/:name', (req, res) => {
+    res.send(req.params.name)
+})
 
 // httprouter2.use((req, res, next) => {
 //     console.log(req.params)
 //     next()
 // })
 
-
 // httprouter.use('/:bar', httprouter2)
-// app.http.use('/:foo', httprouter)
+app.http.use()
+
+app.http.use('/test', httprouter)
 
 // app.http.use('/', (req, res, next) => {
 //     next()
@@ -68,21 +68,21 @@ const app = createApplication(MyRequest, ApplicationResponse, { enabled: true, c
 // app.ws.use('/:greet', wsrouter2)
 // app.ws.use('/:greet', wsrouter)
 
-const router = new MultiplexingRouter()
+// const router = new MultiplexingRouter()
 
-router.on('hello', message => {
-    console.log('message hello', message)
-})
+// router.on('hello', message => {
+//     console.log('message hello', message)
+// })
 
 
-const router2 = new MultiplexingRouter()
+// const router2 = new MultiplexingRouter()
 
-router2.on('hello', message => {
-    console.log('message 2 hello', message)
-})
+// router2.on('hello', message => {
+//     console.log('message 2 hello', message)
+// })
 
-router.use(router2 )
-app.ws.use(router)
+// router.use(router2 )
+// app.ws.use(router)
 
 app.listen(8080, '', () => {
     console.log('> Server listening on port 8080')
